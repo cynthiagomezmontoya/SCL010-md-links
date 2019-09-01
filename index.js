@@ -1,3 +1,7 @@
-module.exports = () => {
+//module.exports = () => {
   // ...
-};
+//};
+
+const process= require(process);
+
+console.log(process.argv)
