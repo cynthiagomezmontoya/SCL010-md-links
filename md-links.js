@@ -60,3 +60,29 @@ const read = (path => {
         })
     })
 })
+ // entrega  links totales, links OK y links rotos.
+
+ const statsAndValidateLinks = (links) =>{
+    return new Promise((resolve,reject)=>{
+      urlValidate(links).then(links=>{
+        const statusLinks = links.map(x=>x.status)
+        let okLinks = statusLinks.toString().match(/200/g)
+        const totalLinks = links.length
+        let brokenLinks = 0
+  
+        if(okLinks != null){
+          okLinks = okLinks.length
+        }else{
+          okLinks =  0
+        }
+        
+        brokenLinks = totalLinks-okLinks
+        resolve({
+          total:totalLinks,
+          ok: okLinks,
+          broken:brokenLinks})
+      }).catch(err=>{
+        reject(err)
+      })
+    })
+  }
