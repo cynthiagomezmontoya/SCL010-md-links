@@ -32,3 +32,31 @@ const read = (path => {
       })
     })
   })
+
+  //lee los archivos y extrae links de un archivo .md
+  const extractLinks = (path =>{
+    return new Promise((resolve, reject)=>{
+      fs.readFile(path, 'utf-8', (err, data) => {
+        if (err) {
+          reject(err);
+        }
+        let links = [];
+        const renderer = new marked.Renderer();
+        renderer.link = function(href,title,text){
+            links.push({
+              href:href,
+              text:text,
+              file:path})
+          }
+        
+          marked(data,{
+              renderer:renderer
+         }) 
+          
+          resolve(links)
+          
+      }).catch(err=>{
+        reject(err)
+        })
+    })
+})
