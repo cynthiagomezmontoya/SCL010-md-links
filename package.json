@@ -26,10 +26,18 @@
   },
   "homepage": "https://github.com/cynthiagomezmontoya/SCL010-md-links#readme",
   "dependencies": {
+    "@babel/core": "^7.5.5",
+    "babel-core": "^6.26.3",
+    "babel-jest": "^24.9.0",
     "chalk": "^2.4.2",
+    "curriculum-parser": "github:Laboratoria/course-parser",
+    "express": "^4.17.1",
     "filehound": "^1.17.3",
+    "gh-pages": "^2.1.1",
+    "jest": "^24.9.0",
     "marked": "^0.7.0",
-    "node-fetch": "^2.6.0"
+    "node-fetch": "^2.6.0",
+    "plugin": "^0.3.3"
   },
   "devDependencies": {
     "eslint": "^6.3.0"
