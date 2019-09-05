@@ -34,12 +34,7 @@ parsing,
 [npm-scripts](https://docs.npmjs.com/misc/scripts),
 [semver](https://semver.org/), ...
 
-## Consideraciones generales
 
-Este proyecto se debe "resolver" de manera individual.
-
-La librería debe estar implementada en JavaScript para ser ejecutada con
-Node.js. **Está permitido usar librerías externas**.
 
 ## Parte obligatoria
 

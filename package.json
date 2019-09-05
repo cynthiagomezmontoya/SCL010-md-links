@@ -47,6 +47,7 @@
     "markdown": "^0.5.0",
     "marked": "^0.7.0",
     "node-fetch": "^2.6.0",
+    "path": "^0.12.7",
     "plugin": "^0.3.3",
     "system": "^2.0.1",
     "test": "^0.6.0",
@@ -55,7 +56,7 @@
     "yarn": "^1.17.3"
   },
   "bin": {
-    "cgomez": "bin/md-links",
+    "cgomez-md-links": "bin/md-links",
     "md-links": "_bin/md-liks_"
   },
   "publishConfig": {
