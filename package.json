@@ -57,7 +57,7 @@
   },
   "bin": {
     "cgomez-md-links": "bin/md-links",
-    "md-links": "_bin/md-liks_"
+    "md-links": "bin/md-links"
   },
   "publishConfig": {
     "access": "public"

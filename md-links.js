@@ -1,12 +1,13 @@
 const fs = require('fs'); //proporciona una API para interactuar con el sistema de archivos 
 const FileHound = require('filehound'); // biblioteca Buscará recursivamente un directorio determinado
 const marked = require('marked');
+const fetch = require('node-fetch');
 
 //path = Especifica la parte de la ruta o la URL que manejará la devolución de llamada dada.
 
 
 
-//leer arhivo de directorio
+//leer arhivo de directorio FileHound encontrar archivos dentro de un directorio
 const readingPath = (path =>{
     return new Promise((resolve,reject)=>{
       FileHound.create() // buscara un directorio determinado
@@ -24,11 +25,11 @@ const readingPath = (path =>{
 })
 
 //leer archivo.md
-const read = (path => {
+const readMd = (path => {
     return new Promise((resolve,reject)=>{
       fs.readFile( path,'utf8', (err, data) => {
         if (err){
-          reject(err("archivo no encontrado"+path))
+          reject(new err("archivo no encontrado" +path))
         }
         resolve(data)
       })
@@ -38,10 +39,8 @@ const read = (path => {
   //lee los archivos y extrae links de un archivo .md
   const extractLinks = (path =>{
     return new Promise((resolve, reject)=>{
-      fs.readFile(path, 'utf-8', (err, data) => {
-        if (err) {
-          reject(err);
-        }
+      readMd(path).then(res => {
+      
         let links = [];
         const renderer = new marked.Renderer();
         renderer.link = function(href,title,text){
@@ -51,23 +50,72 @@ const read = (path => {
               file:path})
           }
         
-          marked(data,{
-              renderer:renderer
-         }) 
-          
-          resolve(links)
-          
+          marked(res,{
+              renderer:renderer});
+         resolve(links)
+            
       }).catch(err=>{
         reject(err)
         })
     })
 })
+
+//  arreglo con informacion de los links dentro del directorio
+const findInDirectory = (files) =>{
+  return new Promise((resolve, reject)=>{
+    let count = 0;
+    let allLinks = []
+    files.forEach(element => {
+      extractLinks(element).then(singleLink =>{
+        count++
+        allLinks = allLinks.concat(singleLink)
+        if(count == files.length){
+          resolve(allLinks)
+        }
+      }).catch(err=>{
+          reject(err)
+        })
+    })
+  })
+}
+
+// comprueba true si el archivo es .md 
+const isMd = (path =>{
+  if(path.slice(-3)== ".md"){
+    return true;
+  }
+  return false;
+})
+
+
+//comprobar si path es archivo o directorio
+const fileOrDirectory = (path) => {
+   //checkea si es archivo MD
+  if(isMd(path)){
+    return extractLinks(path)
+  }
+   //si es directorio
+  else {
+      return new Promise((resolve, reject) => { 
+        readingPath(path)
+        .then(files => {
+          findInDirectory(files)
+          .then(links => {
+            resolve(links)
+          })
+        }).catch(err =>{
+          reject(new Error(err.message))
+        })
+      })
+    }
+  }
+
  // entrega  links totales, links OK y links rotos.
 
- const statsAndValidateLinks = (links) =>{
+ const statsAndValidateLinks = (path) =>{
     return new Promise((resolve,reject)=>{
-      urlValidate(links).then(links=>{
-        const statusLinks = links.map(x=>x.status)
+      validateLinks(path).then(links=>{
+        const statusLinks = links.map(element => element.status)
         let okLinks = statusLinks.toString().match(/200/g)
         const totalLinks = links.length
         let brokenLinks = 0
@@ -78,7 +126,7 @@ const read = (path => {
           okLinks =  0
         }
         
-        brokenLinks = totalLinks-okLinks
+        brokenLinks = totalLinks - okLinks
         resolve({
           total:totalLinks,
           ok: okLinks,
@@ -88,26 +136,28 @@ const read = (path => {
       })
     })
    }
+
 //valida cada link y agrega "status" a cada uno segun respuesta del fetch
-const validateLinks = (path) =>{
+const validateLinks = (path) => {
   return new Promise((resolve, reject) => {
-    fileOrDirectoryLinks(path).then(links =>{ 
-    
-      let fetchLinks = links.map(x=>{  
-        
-        return fetch(x.href).then(res =>{
-            x.status = res.status+" "+res.statusText
-          }).catch((err)=>{
-            x.status = err.code
+    fileOrDirectory(path).then(links =>{ 
+    let fetchLinks = links.map(element => {  
+        return fetch (element.href).then(res =>{
+            element.statuscode = res.status;
+            element.statu= res.statusText;
+          })
+            .catch((err)=>{
+            element.status = err.code
           }) 
       })
       
-      Promise.all(fetchLinks).then(res=>{
+      Promise.all(fetchLinks).then(res => {
         resolve(links)
       })
       
-    }).catch(err=>{
-      reject(err)
+    })
+       .catch(err=>{
+        reject(err)
     })
   })
 }
@@ -115,10 +165,11 @@ const validateLinks = (path) =>{
 //stats de cada link 
 const statsLinks = (path) =>{
 return new Promise((resolve, reject) => { 
-  fileOrDirectoryLinks(path).then(links =>{
-    const uniqueLinks = new Set(links.map(x=>x.href))
+  fileOrDirectory(path)
+   .then(links =>{
+    const uniqueLinks = new Set(links.map(element=>element.href))
     resolve({total:links.length,
-      unique:uniqueLinks.size})
+      unique : uniqueLinks.size})
     }).catch(err=>{
       reject(err)
     })
@@ -136,59 +187,14 @@ const mdLinks = (path, options) =>{
   }  
   if(options.stats){
     return statsLinks(path)
-  }if(options.validate){
+  }
+   if(options.validate){
     return validateLinks(path)
-  }else{
-    return fileOrDirectoryLinks(path)}
+  }
+   else{
+    return fileOrDirectory(path)}
   }
 
 module.exports = {
   mdLinks 
 }
-
-//aqui se elige que opcion desea ejecutar si validate o stats 
-
-const mdLinks = (args) => {
-
-let path = process.argv[2]
-
-let options = {
-  stats: false,
-  validate: false,
-}
-
-process.argv.forEach(element =>{
- if( element == "--stats"){
-   options.stats = true
- }
-if(element == "--validate"){
-  options.validate = true
-}
-})
-
-mdLinks.mdLinks(path,options).then(res=>{
-  if(options.validate && options.stats){
-    return console.log(chalk.magenta("Total Links: "+ res.total)+"\n"+chalk.green("Ok Links: "+res.ok)+"\n"+chalk.red("Broken Links: "+res.broken))
-  }
-  if(options.validate){
-    if(res.length === 0){
-      return console.log(chalk.red("No se encontraron links"))
-    }
-    let validateLinks = res.map(x=>x.file+"  "+chalk.blue(x.href)+"  "+chalk.cyan(x.text.substr(0,40))+"  "+x.status)
-    return console.log(validateLinks.join("\n "))
-  }
-  if(options.stats){
-    return console.log(chalk.magenta("Total Links: "+ res.total)+"\n"+chalk.yellow("Unique Links: "+res.unique))
-  }else{
-    if(res.length === 0){
-      return console.log(chalk.red("No se encontraron links"))
-    } 
-    const resLinks = res.map(x=>x.file+"  "+chalk.blue(x.href)+"  "+chalk.cyan(x.text.substr(0,40)))
-    return console.log(resLinks.join("\n "))
-  }
-}).catch(err=>{
-  console.log(chalk.red(err.message))
-});
-}
-
-
